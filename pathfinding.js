@@ -1,6 +1,9 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const imageLoader = document.getElementById('imageLoader');
+const walkableColorDisplay = document.createElement('div'); // Display for walkable colors
+document.body.appendChild(walkableColorDisplay);
+
 let image = new Image();
 let walkableColors = [];
 let placesToVisit = [];
@@ -39,6 +42,7 @@ canvas.addEventListener('click', (event) => {
         // Check if the color is already marked as walkable
         if (!walkableColors.includes(color)) {
             walkableColors.push(color);
+            updateWalkableColorDisplay(color); // Update the display
             console.log(`Selected walkable color: ${color}`);
         } else {
             console.log(`Color ${color} is already walkable.`);
@@ -86,3 +90,25 @@ const generateButton = document.createElement('button');
 generateButton.innerText = 'Generate Paths';
 generateButton.addEventListener('click', generatePaths);
 document.body.appendChild(generateButton);
+
+// Function to update the walkable color display
+function updateWalkableColorDisplay(color) {
+    const colorBox = document.createElement('div');
+    colorBox.style.display = 'inline-block';
+    colorBox.style.width = '20px';
+    colorBox.style.height = '20px';
+    colorBox.style.backgroundColor = color;
+    colorBox.style.marginRight = '5px';
+
+    const colorLabel = document.createElement('span');
+    colorLabel.innerText = color;
+
+    const colorContainer = document.createElement('div');
+    colorContainer.style.display = 'inline-flex';
+    colorContainer.style.alignItems = 'center';
+    colorContainer.style.margin = '5px';
+    
+    colorContainer.appendChild(colorBox);
+    colorContainer.appendChild(colorLabel);
+    walkableColorDisplay.appendChild(colorContainer);
+}
