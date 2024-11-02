@@ -29,17 +29,17 @@ image.onload = function() {
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 }
 
-// Click event to select walkable colors
+// Click event to select walkable colors or places to visit
 canvas.addEventListener('click', (event) => {
-    if (selectingWalkable) {
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.floor((event.clientX - rect.left) / (canvas.width / image.width));
-        const y = Math.floor((event.clientY - rect.top) / (canvas.height / image.height));
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((event.clientX - rect.left) / (canvas.width / image.width));
+    const y = Math.floor((event.clientY - rect.top) / (canvas.height / image.height));
 
+    if (selectingWalkable) {
+        // Select walkable colors
         const pixelData = ctx.getImageData(x, y, 1, 1).data;
         const color = `rgba(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]}, ${pixelData[3]})`;
 
-        // Check if the color is already marked as walkable
         if (!walkableColors.includes(color)) {
             walkableColors.push(color);
             updateWalkableColorDisplay(color); // Update the display
@@ -49,11 +49,8 @@ canvas.addEventListener('click', (event) => {
         }
     } else {
         // Select places to visit
-        const rect = canvas.getBoundingClientRect();
-        const x = Math.floor((event.clientX - rect.left) / (canvas.width / image.width));
-        const y = Math.floor((event.clientY - rect.top) / (canvas.height / image.height));
-
         placesToVisit.push({ x, y });
+        drawPlaceMarker(x, y);
         console.log(`Added place to visit at (${x}, ${y}).`);
     }
 });
@@ -72,18 +69,38 @@ function generatePaths() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-    // Draw walkable areas (you can implement more sophisticated pathfinding here)
+    // Draw each place to visit
+    placesToVisit.forEach(place => drawPlaceMarker(place.x, place.y));
+
+    // Draw paths between consecutive places and connect the last to the first
     placesToVisit.forEach((place, index) => {
-        if (index > 0) {
+        const scaleX = canvas.width / image.width;
+        const scaleY = canvas.height / image.height;
+        
+        // Draw path to the next place
+        if (index < placesToVisit.length - 1) {
             ctx.beginPath();
-            ctx.moveTo(placesToVisit[index - 1].x * (canvas.width / image.width), placesToVisit[index - 1].y * (canvas.height / image.height));
-            ctx.lineTo(place.x * (canvas.width / image.width), place.y * (canvas.height / image.height));
-            ctx.strokeStyle = 'red'; // Path color
+            ctx.moveTo(place.x * scaleX, place.y * scaleY);
+            ctx.lineTo(placesToVisit[index + 1].x * scaleX, placesToVisit[index + 1].y * scaleY);
+            ctx.strokeStyle = 'red';
             ctx.lineWidth = 3;
             ctx.stroke();
         }
     });
+
+    // Connect last place to the first to complete the loop
+    if (placesToVisit.length > 1) {
+        ctx.beginPath();
+        const firstPlace = placesToVisit[0];
+        const lastPlace = placesToVisit[placesToVisit.length - 1];
+        ctx.moveTo(lastPlace.x * (canvas.width / image.width), lastPlace.y * (canvas.height / image.height));
+        ctx.lineTo(firstPlace.x * (canvas.width / image.width), firstPlace.y * (canvas.height / image.height));
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
 }
+
 
 // Button to trigger path generation
 const generateButton = document.createElement('button');
@@ -111,4 +128,14 @@ function updateWalkableColorDisplay(color) {
     colorContainer.appendChild(colorBox);
     colorContainer.appendChild(colorLabel);
     walkableColorDisplay.appendChild(colorContainer);
+}
+
+// Function to draw a marker at each place to visit
+function drawPlaceMarker(x, y) {
+    const scaleX = canvas.width / image.width;
+    const scaleY = canvas.height / image.height;
+    ctx.fillStyle = 'blue'; // Marker color
+    ctx.beginPath();
+    ctx.arc(x * scaleX, y * scaleY, 5, 0, Math.PI * 2); // Circle marker with radius 5
+    ctx.fill();
 }
