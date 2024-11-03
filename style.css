@@ -17,3 +17,7 @@ canvas {
 #imageUpload {
     margin-bottom: 10px; /* Spacing below upload input */
 }
+
+h1 {
+    color:aliceblue;
+}
