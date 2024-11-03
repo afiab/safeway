@@ -6,57 +6,91 @@ const walkableColorDisplay = document.getElementById('walkableColorDisplay');
 let image = new Image();
 let walkableColors = [];
 let placesToVisit = [];
-let selectingWalkable = true; // Flag to toggle between selecting colors and places
-let walkableMap = []; // Array to store walkable vs non-walkable pixels
+let selectingWalkable = true;
+let walkableMap = [];
+
+// Off-screen canvas for accurate color picking
+const offscreenCanvas = document.createElement('canvas');
+const offscreenCtx = offscreenCanvas.getContext('2d');
 
 // Load the selected image
 imageLoader.addEventListener('change', (event) => {
     const file = event.target.files[0];
     const reader = new FileReader();
-    
+
     reader.onload = function(e) {
         image.src = e.target.result;
     };
-    
+
     reader.readAsDataURL(file);
 });
 
 // Draw the image once loaded
 image.onload = function() {
-    const scale = window.innerWidth / image.width;
+    const maxWidth = window.innerWidth * 0.8;
+    const maxHeight = window.innerHeight * 0.8;
+
+    const widthRatio = maxWidth / image.width;
+    const heightRatio = maxHeight / image.height;
+    const scale = Math.min(widthRatio, heightRatio, 1);
+
+    // Set the canvas size based on the scaled dimensions
     canvas.width = image.width * scale;
     canvas.height = image.height * scale;
+
+    // Draw the image on the visible canvas
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    // Draw the image at its original size on the off-screen canvas
+    offscreenCanvas.width = image.width;
+    offscreenCanvas.height = image.height;
+    offscreenCtx.drawImage(image, 0, 0);
+
     // Initialize walkable map
-    walkableMap = Array.from({ length: canvas.height }, () => Array(canvas.width).fill(0));
+    walkableMap = Array.from({ length: image.height }, () => Array(image.width).fill(0));
 }
 
-// Click event to select walkable colors or places to visit
+// Correct scaling calculation for x and y coordinates
 canvas.addEventListener('click', (event) => {
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left) / (canvas.width / image.width));
-    const y = Math.floor((event.clientY - rect.top) / (canvas.height / image.height));
+    const scaleX = image.width / canvas.width; // Horizontal scale factor
+    const scaleY = image.height / canvas.height; // Vertical scale factor
+
+    // Adjust click coordinates to match original image dimensions
+    const x = Math.floor((event.clientX - rect.left) * scaleX);
+    const y = Math.floor((event.clientY - rect.top) * scaleY);
 
     if (selectingWalkable) {
-        // Select walkable colors
-        const pixelData = ctx.getImageData(x, y, 1, 1).data;
+        // Use off-screen canvas to accurately get pixel color
+        const pixelData = offscreenCtx.getImageData(x, y, 1, 1).data;
         const color = `rgba(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]}, ${pixelData[3]})`;
 
         if (!walkableColors.includes(color)) {
             walkableColors.push(color);
-            updateWalkableColorDisplay(color); // Update the display
+            updateWalkableColorDisplay(color);
             updateWalkableMap();
             console.log(`Selected walkable color: ${color}`);
         } else {
             console.log(`Color ${color} is already walkable.`);
         }
     } else {
-        // Select places to visit
         placesToVisit.push({ x, y });
-        drawPlaceMarker(x, y);
+        drawPlaceMarker(x, y); // Pass original coordinates, scaling will be handled in drawPlaceMarker
         console.log(`Added place to visit at (${x}, ${y}).`);
     }
 });
+
+// Function to draw a marker at each place to visit with correct scaling
+function drawPlaceMarker(x, y) {
+    const scaleX = canvas.width / image.width;
+    const scaleY = canvas.height / image.height;
+
+    ctx.fillStyle = 'blue';
+    ctx.beginPath();
+    ctx.arc(x * scaleX, y * scaleY, 5, 0, Math.PI * 2, true); // Scale coordinates for drawing
+    ctx.fill();
+}
+
 
 // Toggle selection mode
 const toggleButton = document.createElement('button');
@@ -67,14 +101,18 @@ toggleButton.addEventListener('click', () => {
 });
 document.body.appendChild(toggleButton);
 
-// Generate paths using BFS
 function generatePaths() {
+    // Clear the canvas and redraw the image
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-    // Draw each place to visit
-    placesToVisit.forEach(place => drawPlaceMarker(place.x, place.y));
+    // Re-draw each place marker with the correct scaling
+    placesToVisit.forEach(place => {
+        // Apply scaling when drawing each place marker
+        drawPlaceMarker(place.x, place.y);
+    });
 
+    // Draw paths between places to visit
     for (let i = 0; i < placesToVisit.length - 1; i++) {
         const start = placesToVisit[i];
         const end = placesToVisit[i + 1];
@@ -85,10 +123,31 @@ function generatePaths() {
     }
 }
 
+// Adjusted drawPath function to apply correct scaling
+function drawPath(path) {
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+
+    const scaleX = canvas.width / image.width;
+    const scaleY = canvas.height / image.height;
+
+    // Scale the starting point of the path
+    ctx.moveTo(path[0].x * scaleX, path[0].y * scaleY);
+
+    // Scale each point in the path as it is drawn
+    for (let j = 1; j < path.length; j++) {
+        ctx.lineTo(path[j].x * scaleX, path[j].y * scaleY);
+    }
+
+    ctx.stroke();
+}
+
+
 // BFS for pathfinding
 function findPathBFS(start, end) {
     const queue = [[start.x, start.y]];
-    const visited = Array.from({ length: canvas.height }, () => Array(canvas.width).fill(false));
+    const visited = Array.from({ length: image.height }, () => Array(image.width).fill(false));
     const parent = {};
     visited[start.y][start.x] = true;
 
@@ -115,41 +174,27 @@ function findPathBFS(start, end) {
             const nx = x + dx;
             const ny = y + dy;
 
-            if (nx >= 0 && ny >= 0 && nx < canvas.width && ny < canvas.height && !visited[ny][nx] && walkableMap[ny][nx] === 1) {
+            if (nx >= 0 && ny >= 0 && nx < image.width && ny < image.height && !visited[ny][nx] && walkableMap[ny][nx] === 1) {
                 queue.push([nx, ny]);
                 visited[ny][nx] = true;
                 parent[`${nx},${ny}`] = `${x},${y}`;
             }
         }
     }
-    return null; // No path found
-}
-
-// Draw the path on the canvas
-function drawPath(path) {
-    ctx.strokeStyle = 'red'; // Path color
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(path[0].x * (canvas.width / image.width), path[0].y * (canvas.height / image.height));
-
-    for (let j = 1; j < path.length; j++) {
-        ctx.lineTo(path[j].x * (canvas.width / image.width), path[j].y * (canvas.height / image.height));
-    }
-
-    ctx.stroke();
+    return null;
 }
 
 // Function to update the walkable map based on selected colors
 function updateWalkableMap() {
-    for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-            const pixelData = ctx.getImageData(x, y, 1, 1).data;
+    for (let y = 0; y < image.height; y++) {
+        for (let x = 0; x < image.width; x++) {
+            const pixelData = offscreenCtx.getImageData(x, y, 1, 1).data;
             const color = `rgba(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]}, ${pixelData[3]})`;
 
             if (isColorSimilar(color)) {
-                walkableMap[y][x] = 1; // Mark as walkable
+                walkableMap[y][x] = 1;
             } else {
-                walkableMap[y][x] = 0; // Mark as non-walkable
+                walkableMap[y][x] = 0;
             }
         }
     }
@@ -160,7 +205,7 @@ function isColorSimilar(color) {
     const rgba = color.match(/\d+/g).map(Number);
     return walkableColors.some(walkableColor => {
         const walkableRGBA = walkableColor.match(/\d+/g).map(Number);
-        return colorDistance(rgba, walkableRGBA) < 50; // Threshold for color similarity
+        return colorDistance(rgba, walkableRGBA) < 15;
     });
 }
 
@@ -199,14 +244,14 @@ function updateWalkableColorDisplay(color) {
 function drawPlaceMarker(x, y) {
     const scaleX = canvas.width / image.width;
     const scaleY = canvas.height / image.height;
-    ctx.fillStyle = 'blue'; // Marker color
+    ctx.fillStyle = 'blue';
     ctx.beginPath();
-    ctx.arc(x * scaleX, y * scaleY, 5, 0, Math.PI * 2); // Circle marker with radius 5
+    ctx.arc(x * scaleX, y * scaleY, 5, 0, Math.PI * 2, true);
     ctx.fill();
 }
 
-// Button to trigger path generation
-const generateButton = document.createElement('button');
-generateButton.innerText = 'Generate Paths';
-generateButton.addEventListener('click', generatePaths);
-document.body.appendChild(generateButton);
+// Add a button to generate paths
+const generatePathButton = document.createElement('button');
+generatePathButton.innerText = 'Generate Paths';
+generatePathButton.addEventListener('click', generatePaths);
+document.body.appendChild(generatePathButton);
