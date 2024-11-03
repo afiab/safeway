@@ -17,15 +17,22 @@
             padding: 20px;
         }
     </style>
+    <!-- google font stuff -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gloria+Hallelujah&family=Modak&display=swap" rel="stylesheet">
 </head>
 <body>
-    <main>
-        <h1>SafeWay</h1>
-        <input type="file" id="imageLoader" accept="image/*">
-        <canvas id="canvas"></canvas>
+    <div class="stack">
+        <div class="contain" id="row">
+            <h1>SafeWay</h1>
+            <button><input type="file" id="imageLoader" accept="image/*"></button>
+        </div>
+        <div class="contain">
+            <canvas id="canvas"></canvas>
+        </div>
         <div id="walkableColorDisplay"></div>
         <script src="pathfinding.js"></script>
-        <h1> </h1>
-    </main>
+    </div>
 </body>
 </html>

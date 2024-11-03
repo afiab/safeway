@@ -28,7 +28,7 @@ imageLoader.addEventListener('change', (event) => {
 // Draw the image once loaded
 image.onload = function() {
     const maxWidth = window.innerWidth * 0.8;
-    const maxHeight = window.innerHeight * 0.8;
+    const maxHeight = window.innerHeight * 0.7;
 
     const widthRatio = maxWidth / image.width;
     const heightRatio = maxHeight / image.height;
@@ -125,7 +125,7 @@ function generatePaths() {
 
 // Adjusted drawPath function to apply correct scaling
 function drawPath(path) {
-    ctx.strokeStyle = 'red';
+    ctx.strokeStyle = '#fc567d';
     ctx.lineWidth = 3;
     ctx.beginPath();
 
@@ -244,7 +244,7 @@ function updateWalkableColorDisplay(color) {
 function drawPlaceMarker(x, y) {
     const scaleX = canvas.width / image.width;
     const scaleY = canvas.height / image.height;
-    ctx.fillStyle = 'blue';
+    ctx.fillStyle = '#535398';
     ctx.beginPath();
     ctx.arc(x * scaleX, y * scaleY, 5, 0, Math.PI * 2, true);
     ctx.fill();

@@ -1,3 +1,19 @@
+:root {
+    /* colors */
+    --c0: #FFFFFF;
+    --c1: #F0F7EE;
+    --c2: #e7c0c9;
+    --c3: #87BBA2;
+    --c4: #7E846B;
+    --c5: #000000;
+}
+
+.gloria-hallelujah-regular {
+    font-family: "Gloria Hallelujah", cursive;
+    font-weight: 400;
+    font-style: normal;
+}/* google font */
+
 body {
     display: flex;
     flex-direction: column;
@@ -6,18 +22,44 @@ body {
     padding: 0; /* Remove default padding */
     height: 100vh; /* Full height of the viewport */
     overflow: hidden; /* Prevent scrolling */
+    background-color: var(--c2);
 }
+
+button {
+    margin: 5px;
+    background-color: var(--c3);
+    color: var(--c1);
+    border-color: var(--c1);
+}
+
 canvas {
-    border: 1px solid black; /* Border around canvas */
-    margin: 20px; /* Margin around canvas */
-}
-#colorList {
-    margin-top: 10px; /* Spacing above color list */
-}
-#imageUpload {
-    margin-bottom: 10px; /* Spacing below upload input */
+    border: 1px solid var(--c1); /* Border around canvas */
+    margin: 10px; /* Margin around canvas */
 }
 
 h1 {
-    color:aliceblue;
+    color: var(--c4);
+    font-family: "Gloria Hallelujah", cursive;
+    margin: 0;
+    padding: 0;
+    /* padding-right: 20px; */
+}
+
+#row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+#row .contain{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
 }
